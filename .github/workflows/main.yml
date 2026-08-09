@@ -1,0 +1,37 @@
+name: Build macOS ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'macOS version'
+        required: true
+        default: 'Mojave'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Download Mojave installer
+      run: |
+        softwareupdate --fetch-full-installer --full-installer-version 10.14.6
+
+    - name: Create ISO
+      run: |
+        hdiutil create -o Mojave -size 8g -layout SPUD -fs HFS+J
+        hdiutil attach Mojave.dmg -mountpoint /Volumes/install_build
+        mkdir /Volumes/install_build/System
+        cp -R "/Applications/Install macOS Mojave.app" /Volumes/install_build/System/
+        hdiutil detach /Volumes/install_build
+        hdiutil convert Mojave.dmg -format UDTO -o Mojave.iso
+        mv Mojave.iso.cdr Mojave.iso
+
+    - name: Upload ISO
+      uses: actions/upload-artifact@v3
+      with:
+        name: Mojave-ISO
+        path: Mojave.iso
